@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.lawu.chick.repository.mapper.extend.MemberDOExtendMapper" >
+
+   <!-- 鸡蛋数量操作 -->
+   <update id="eggOperator" parameterType="com.lawu.chick.repository.param.MemberEggOperatorParam">
+        UPDATE member 
+        SET eggs = eggs <choose><when test="increase">+</when><otherwise>-</otherwise></choose> #{eggs,jdbcType=DECIMAL}, 
+        gmt_modified = NOW()
+        where num = #{memberNum,jdbcType=VARCHAR}
+        <if test="!increase">AND eggs <![CDATA[>=]]> #{eggs,jdbcType=DECIMAL} </if>
+   </update>
+   
+   <resultMap id="BaseResultMap" type="com.lawu.chick.repository.domain.extend.MemberBaseInfoDOView">
+        <result column="member_num" jdbcType="VARCHAR" property="memberNum"/>
+         <result column="nickname" jdbcType="VARCHAR" property="nickname" />
+         <result column="avatarUrl" jdbcType="VARCHAR" property="avatarUrl" />
+        <result column="eggs" jdbcType="DECIMAL" property="eggs" />
+        <result column="gmt_create" jdbcType="TIMESTAMP" property="gmtCreate" />
+    </resultMap>
+    
+    <select id="selectByExampleWithRowbounds" resultMap="BaseResultMap" parameterType="com.lawu.chick.repository.param.MemberParam">
+       SELECT
+			wx.member_num,
+			wx.nickname,
+			wx.avatarUrl as avatarUrl,
+			m.eggs,
+			m.gmt_create
+		FROM
+			member m
+		LEFT JOIN wx_user wx ON m.num = wx.member_num
+		<where>
+			<if test="memberNum != null and memberNum !=''">
+	             wx.member_num LIKE concat(concat("%",#{memberNum}),"%")
+	        </if>
+        </where>
+    </select>
+
+</mapper>

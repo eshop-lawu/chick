@@ -1,0 +1,7 @@
+{"properties": [
+  {
+    "name": "lawu.chick.wechat.enabled",
+    "type": "java.lang.Boolean",
+    "description": "是否启用微信服务"
+  }
+]}

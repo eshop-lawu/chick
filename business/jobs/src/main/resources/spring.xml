@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:reg="http://www.dangdang.com/schema/ddframe/reg" xmlns:job="http://www.dangdang.com/schema/ddframe/job"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.dangdang.com/schema/ddframe/reg http://www.dangdang.com/schema/ddframe/reg/reg.xsd
+       http://www.dangdang.com/schema/ddframe/job http://www.dangdang.com/schema/ddframe/job/job.xsd">
+
+    <!-- 配置作业注册中心 -->
+    <reg:zookeeper id="regCenter" server-lists="${zookeeper.servers}" namespace="chick-jobs-job" />
+
+    <!-- 每个小时执行一次   -->
+    <job:simple id="eggDistributionJob" description="小鸡进入产房的鸡蛋进行分配"
+        class="com.lawu.chick.jobs.impl.EggDistributionJob" registry-center-ref="regCenter" cron="0 0 0/1 * * ?"
+        sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" />
+    <!-- 每个小时执行一次  -->
+    <job:simple id="eggProductionJob" description="小鸡产蛋,把分配的鸡蛋放入到蛋窝"
+        class="com.lawu.chick.jobs.impl.EggProductionJob" registry-center-ref="regCenter" cron="0 0 0/1 * * ?"
+        sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" />
+    <job:simple id="externalCleannessJob" description="农场垃圾生产"
+        class="com.lawu.chick.jobs.impl.ExternalCleannessJob" registry-center-ref="regCenter" cron="0 0/5 * * * ?"
+        sharding-total-count="1" overwrite="true" job-parameter="1000" disabled="${dangdang.ddframe.job.disabled}" />
+    <job:simple id="chickenIntoHenhouseJob" description="定时进鸡舍"
+        class="com.lawu.chick.jobs.impl.ChickenIntoHenhouseJob" registry-center-ref="regCenter" cron="0 0/5 * * * ?"
+        sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" job-parameter="1000"/>
+    <job:simple id="chickenToActiveJob" description="定时修改小鸡为活动" 
+    	class="com.lawu.chick.jobs.impl.ChickenToActiveJob"  registry-center-ref="regCenter" cron="0 0/5 * * * ?" 
+    	sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" job-parameter="1000"/>    
+  <!--   <job:simple id="chickenSickJob" description="定时生病" class="com.lawu.chick.jobs.impl.ChickenSickJob"
+        registry-center-ref="regCenter" cron="0 0/5 * * * ?" sharding-total-count="1" overwrite="true"
+        disabled="${dangdang.ddframe.job.disabled}" job-parameter="1000"/> -->
+   <!--  <job:simple id="rangelandCleanJoyfullJob" description="定时清洁度大于60的牧场且满足时间15分钟的小鸡信息加入缓存"
+        class="com.lawu.chick.jobs.impl.RangelandCleanJoyfullJob" registry-center-ref="regCenter" cron="0 0/2 * * * ?"
+        sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" job-parameter="1000"/> -->
+<!--     <job:simple id="henhouseCleanJoyfullJob" description="定时清洁度小于60的鸡舍且满足时间10分钟的小鸡信息加入缓存"
+        class="com.lawu.chick.jobs.impl.HenhouseCleanJoyfullJob" registry-center-ref="regCenter" cron="0 0/2 * * * ?"
+        sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" job-parameter="1000"/> -->
+    
+    <!-- <job:simple id="rangelandCleanJoyfulAddJob" description="定时清洁度大于60的牧场且满足时间15分钟的小鸡信息缓存-同步数据库"
+                class="com.lawu.chick.jobs.impl.RangelandCleanJoyfulAddJob" registry-center-ref="regCenter" cron="0 0/2 * * * ?"
+                sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" /> -->
+   <!--  <job:simple id="henhouseCleanJoyfulMinusJob" description="定时清洁度小于60的鸡舍且满足时间10分钟的小鸡信息缓存-同步数据库"
+                class="com.lawu.chick.jobs.impl.HenhouseCleanJoyfulMinusJob" registry-center-ref="regCenter" cron="0 0/2 * * * ?"
+                sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" />  -->
+    <job:simple id="dayHenhouseJoyfulMinusJob" description="定时将未处牧区且满足15分钟的小鸡信息缓存-同步数据库"
+                class="com.lawu.chick.jobs.impl.DayHenhouseJoyfulMinusJob" registry-center-ref="regCenter" cron="0 0/2 * * * ?"
+                sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" />
+	<job:simple id="dayHenhouseMinusJoyfullJob" description="定时将未处牧区且满足15分钟的小鸡信息加入缓存"
+                class="com.lawu.chick.jobs.impl.DayHenhouseMinusJoyfullJob" registry-center-ref="regCenter" cron="0 0/2 * * * ?"
+                sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" job-parameter="1000"/>
+	<!-- 饱腹值递减job  -->
+	<job:simple id="chickenFullValDecreJob" description="饱腹值递减放入缓存"
+        class="com.lawu.chick.jobs.impl.ChickenFullValDecreJob" registry-center-ref="regCenter" cron="0 0/1 * * * ?"
+        sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" job-parameter="1000"/>
+    <job:simple id="chickenFullValDoDecreJob" description="饱腹值递减缓存中更新到数据库中"
+                class="com.lawu.chick.jobs.impl.ChickenFullValDoDecreJob" registry-center-ref="regCenter" cron="0 0/1 * * * ?"
+                sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}"/>
+    <!-- <job:simple id="chickGrowthDayJob" description="小鸡每天成长值加1"
+                class="com.lawu.chick.jobs.impl.ChickenGrowthJob" registry-center-ref="regCenter" cron="0 10 0 1/1 * ?"
+                sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" job-parameter="1000"/> -->
+    <!-- 小鸡配置信息定时更新 -->
+  	<job:simple id="chickSysConfigJob " description="小鸡配置信息定时更新" class="com.lawu.chick.jobs.impl.ChickSysConfigJob" registry-center-ref="regCenter" cron="0 0/1 * * * ?"
+        sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" />
+    <!-- 发送微信红包定时任务 -->
+  	<job:simple id="sendRedpacketJob" description="微信发送红包" class="com.lawu.chick.jobs.impl.SendRedpacketJob"
+                registry-center-ref="regCenter" cron="0 0/5 * * * ?"
+                sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}"
+                job-parameter="1000"/>
+    <job:simple id="queryRedpacketJob" description="查询微信红包状态" class="com.lawu.chick.jobs.impl.QueryRedpacketJob"
+                registry-center-ref="regCenter" cron="30 0/20 * * * ?"
+                sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}"
+                job-parameter="1000"/>
+    <!--鸡窝清洁度规则定时任务-->
+    <job:simple id="chickenAttenuationJoyfulValJob" description="根据鸡窝清洁度衰减小鸡愉悦值"
+                class="com.lawu.chick.jobs.impl.ChickenAttenuationJoyfulValJob" registry-center-ref="regCenter" cron="0 0/1 * * * ?"
+                sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" job-parameter="1000"/>
+
+    <job:simple id="houseReduceCleanessJob" description="鸡窝定时产生垃圾"
+                class="com.lawu.chick.jobs.impl.ChickenInHouseReduceCleanessJob" registry-center-ref="regCenter" cron="0 0/3 * * * ?"
+                sharding-total-count="1" overwrite="true" job-parameter="1000" disabled="${dangdang.ddframe.job.disabled}" />
+
+    <job:simple id="inHouseTotalTimeJob" description="定时更新小鸡在鸡窝的累积时长"
+                class="com.lawu.chick.jobs.impl.ChickenInHouseTotalTimeJob" registry-center-ref="regCenter" cron="0 0/5 * * * ?"
+                sharding-total-count="1" overwrite="true" job-parameter="1000" disabled="${dangdang.ddframe.job.disabled}" />
+                
+    <job:simple id="rangelandTimeJob" description="小鸡在牧场时间累计"
+        class="com.lawu.chick.jobs.impl.RangelandTimeJob" registry-center-ref="regCenter" cron="0 0/2 * * * ?"
+        sharding-total-count="1" overwrite="true" job-parameter="1000" disabled="${dangdang.ddframe.job.disabled}" />
+        
+    <job:simple id="rangelandProfitJob" description="牧场收益"
+        class="com.lawu.chick.jobs.impl.RangelandProfitJob" registry-center-ref="regCenter" cron="0 0/1 * * * ?"
+        sharding-total-count="1" overwrite="true" job-parameter="1000" disabled="${dangdang.ddframe.job.disabled}" />
+        
+     <job:simple id="rangelandProfitDoJob" description="牧场收益-同步数据"
+        class="com.lawu.chick.jobs.impl.RangelandProfitDoJob" registry-center-ref="regCenter" cron="0 0/1 * * * ?"
+        sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" />
+
+    <!-- 任务奖励配置更新 -->
+    <job:simple id="taskRewardsConfigJob " description="任务奖励配置更新" class="com.lawu.chick.jobs.impl.TaskRewardsConfigJob" registry-center-ref="regCenter" cron="0 0 0/1 * * ?"
+                sharding-total-count="1" overwrite="true" disabled="${dangdang.ddframe.job.disabled}" />
+
+</beans>

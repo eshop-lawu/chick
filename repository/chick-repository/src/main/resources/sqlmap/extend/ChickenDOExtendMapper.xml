@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.lawu.chick.repository.mapper.extend.ChickenDOExtendMapper">
+    
+    <!-- 获取当前生产中小鸡的总的愉悦值 -->
+    <select id="totalJoyfulVal" resultType="java.math.BigDecimal">
+        SELECT SUM(joyful_val_snapshoot) FROM chicken WHERE is_pregnant = 1
+    </select>
+    
+    <resultMap id="BaseResultMap" type="com.lawu.chick.repository.domain.ChickenDO">
+        <id column="id" jdbcType="BIGINT" property="id" />
+        <result column="num" jdbcType="VARCHAR" property="num" />
+        <result column="member_num" jdbcType="VARCHAR" property="memberNum" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="period" jdbcType="TINYINT" property="period" />
+        <result column="status" jdbcType="TINYINT" property="status" />
+        <result column="is_outside" jdbcType="BIT" property="isOutside" />
+        <result column="is_pregnant" jdbcType="BIT" property="isPregnant" />
+        <result column="joyful_val" jdbcType="INTEGER" property="joyfulVal" />
+        <result column="full_val" jdbcType="INTEGER" property="fullVal" />
+        <result column="growth_val" jdbcType="INTEGER" property="growthVal" />
+        <result column="joyful_val_snapshoot" jdbcType="INTEGER" property="joyfulValSnapshoot" />
+        <result column="joyful_house_clean_time" jdbcType="TIMESTAMP" property="joyfulHouseCleanTime" />
+        <result column="joyful_rangeland_site_time" jdbcType="TIMESTAMP" property="joyfulRangelandSiteTime" />
+        <result column="joyful_rangeland_clean_time" jdbcType="TIMESTAMP" property="joyfulRangelandCleanTime" />
+        <result column="full_period_time" jdbcType="TIMESTAMP" property="fullPeriodTime" />
+        <result column="lay_eggs" jdbcType="DECIMAL" property="layEggs" />
+        <result column="life_start_time" jdbcType="TIMESTAMP" property="lifeStartTime" />
+        <result column="gmt_modified" jdbcType="TIMESTAMP" property="gmtModified" />
+        <result column="gmt_create" jdbcType="TIMESTAMP" property="gmtCreate" />
+    </resultMap>
+     <resultMap id="ChickQueryResultMap" type="com.lawu.chick.repository.domain.extend.ChickDOView" >
+        <result column="memberNum" property="memberNum" jdbcType="VARCHAR" />
+        <result column="chickNum" property="chickNum" jdbcType="VARCHAR" />
+        <result column="chickenStatus" property="chickenStatus" jdbcType="TINYINT" />
+        <result column="isOutside" property="isOutside" jdbcType="TINYINT" />
+        <result column="houseCleanness" property="houseCleanness" jdbcType="TINYINT" />
+        <result column="externalCleanness" property="externalCleanness" jdbcType="INTEGER" />
+    </resultMap>
+    
+    <resultMap id="countEggProductionResultMap" type="com.lawu.chick.repository.domain.extend.CountEggProductionDO">
+        <result column="count" jdbcType="BIGINT" property="count" />
+        <result column="lay_eggs" jdbcType="DECIMAL" property="layEggs"/>
+    </resultMap>
+    
+<!--     <sql id="Base_Column_List">
+        id, num, member_num, name, period, status, is_outside, is_pregnant, joyful_val, full_val,
+        growth_val, joyful_val_snapshoot, joyful_house_clean_time, joyful_rangeland_site_time,
+        joyful_rangeland_clean_time, full_period_time, lay_eggs, life_start_time, gmt_modified,
+        gmt_create
+    </sql>
+
+    <select id="getToBeSickChickList" resultMap="BaseResultMap">
+        select <include refid="Base_Column_List" />
+        from chicken
+        where period = ${period} and round((UNIX_TIMESTAMP(DATE_FORMAT(now(),'%Y-%m-%d %H:%i'))-UNIX_TIMESTAMP(DATE_FORMAT(life_start_time,'%Y-%m-%d %H:%i')))/60) > ${chickWaitSickMins}
+        limit ${offset},${pageSize}
+    </select> -->
+
+    <update id="addDayGrowth" parameterType="com.lawu.chick.repository.param.ChickGrowthParam">
+        <![CDATA[
+         update chicken set growth_val = (
+              case 
+                when growth_val+${addGrowth} > ${maxGrowth} then ${maxGrowth} 
+                ELSE growth_val+${addGrowth} 
+              end  
+            ),period = (
+					CASE
+					WHEN growth_val >=${maxGrowth} THEN ${mature}
+					WHEN ${halfGrowVal} <= growth_val and growth_val < ${maxGrowth} THEN ${halfGrowth}
+					ELSE 0
+					END
+			),life_start_time=(
+					case 
+					when life_start_time is null and period=${mature} then now()
+					else life_start_time
+					end
+			),gmt_modified = NOW()
+            where id = ${id};
+             ]]>
+    </update>
+    <select resultMap="ChickQueryResultMap" parameterType="com.lawu.chick.repository.param.ChickQueryFullValParam" id="getChickFullValPeriod" >
+        SELECT
+        c.num as chickNum,
+        c.member_num as memberNum,
+        c.`status` as status,
+        c.is_outside as isOutside,
+        r.external_cleanness as externalCleanness
+        FROM
+        chicken c
+        LEFT JOIN rangeland r ON c.member_num = r.member_num where  c.full_period_time &lt; DATE_SUB(NOW(),INTERVAL ${chickDeclineFullValMinute} MINUTE)
+        and c.period not in(5) limit ${offset},${pageSize}
+    </select>
+    <!-- <select id="getHenhouseCleanMinusJoyfullChickens" resultMap="ChickQueryResultMap" parameterType="com.lawu.chick.repository.param.ChickenMinusJoyfullQueryParam">
+        <![CDATA[
+      SELECT
+        c.num as chickNum,
+        c.member_num as memberNum,
+        c.`status` as status,
+        c.is_outside as isOutside,
+        r.house_cleanness houseCleanness,
+        r.external_cleanness as externalCleanness
+    FROM
+        chicken c
+    LEFT JOIN rangeland r ON c.member_num = r.member_num where c.period != 5 and c.joyful_house_clean_time <= DATE_SUB(NOW(),INTERVAL #{chickDeclineJoyfulValMinute} MINUTE)
+         and r.house_cleanness < #{chickRangelandCleanVal} limit ${offset},${pageSize}
+         ]]>
+    </select> -->
+     <!-- 处理小鸡减饱腹值 -->
+    <update id="doDecreaseFullVal" parameterType="com.lawu.chick.repository.param.ChickDealWithParam">
+        <![CDATA[
+            update chicken set full_val = (
+            case
+            when full_val - ${val} <= ${limitVal} then ${limitVal}
+            ELSE full_val -${val}
+            end
+            ),
+            status =(
+            	case 
+            	when full_val >=${minFull} and full_val<${hungerVal} then 2
+            	when full_val <${minFull} then 3
+            	else status
+            	end
+            ),gmt_modified = NOW()
+            where num=#{num} and member_num=#{memberNum}
+        ]]>
+    </update>
+
+    <select id="getDayHenhouseMinusJoyfullChickens" resultMap="ChickQueryResultMap" parameterType="com.lawu.chick.repository.param.ChickenDayHenhouseQueryParam">
+        <![CDATA[
+      SELECT
+        c.num as chickNum,
+        c.member_num as memberNum,
+        c.`status` as status,
+        c.is_outside as isOutside
+    FROM
+        chicken c
+      where (c.is_outside = 0 || c.is_pregnant=1 || `status`=3)
+        and c.joyful_rangeland_site_time <= DATE_SUB(NOW(),INTERVAL #{chickInRangelandAddJoyfulValMinute} MINUTE)
+         limit ${offset},${pageSize}
+         ]]>
+    </select>
+	<!-- 查询在牧场中的非饥饿状态下并且没有牧场没有垃圾的鸡  -->
+	<select id="getChickInRangelandAndIsClean" resultMap="ChickQueryResultMap" parameterType="com.lawu.chick.repository.param.ChickenDayHenhouseQueryParam">
+		 <![CDATA[
+		 	select c.num as chickNum,
+			        c.member_num as memberNum from chicken c LEFT JOIN rangeland r on c.member_num=r.member_num
+			where c.is_outside=1 and c.`status` =0 and c.is_pregnant=0 and r.external_cleanness =100
+			and c.joyful_rangeland_clean_time <= DATE_SUB(NOW(),INTERVAL #{chickInRangelandAddJoyfulValMinute} MINUTE) limit ${offset},${pageSize}
+		 ]]>
+	</select>
+	<!-- 查询牧场中饥饿的鸡并且没有牧场没有垃圾的鸡  -->
+	<select id="getChickInRangelandAndIsHunger" resultMap="ChickQueryResultMap" parameterType="com.lawu.chick.repository.param.ChickenDayHenhouseQueryParam">
+		 <![CDATA[
+		 select c.num as chickNum,
+		        c.member_num as memberNum from chicken c LEFT JOIN rangeland r on c.member_num=r.member_num
+		where c.is_outside=1 and c.is_pregnant=0 and ((c.`status` =2  and r.external_cleanness =100) or (c.`status` =0  and r.external_cleanness =0))
+		and c.joyful_rangeland_clean_time <= DATE_SUB(NOW(),INTERVAL #{chickInRangelandAddJoyfulValMinute} MINUTE)  limit ${offset},${pageSize}
+		 ]]>
+	</select>
+
+    <update id="updateFullValDate" parameterType="java.lang.String">
+        update chicken set full_period_time = NOW(),gmt_modified=NOW() WHERE NUM=#{chickNum}
+    </update>
+    <update id="feedChickUpdateChickInfo" parameterType="com.lawu.chick.repository.param.ChickUpdateInfoParam">
+    	<![CDATA[
+    		UPDATE chicken
+				SET joyful_val = joyful_val + ${joyfulVal},
+				 full_val = (
+					CASE WHEN full_val + ${fullVal} > ${fullMaxVal} THEN ${fullMaxVal}
+				  ELSE full_val + ${fullVal}
+					end
+				),growth_val=(
+					CASE WHEN growth_val+${growthVal} >${growthMaxVal} THEN ${growthMaxVal}
+					ELSE growth_val+${growthVal}
+					END
+				),
+				 period = (
+					CASE
+					WHEN growth_val >=${growthMaxVal} THEN ${mature}
+					WHEN ${halfGrowVal} <= growth_val and growth_val < ${growthMaxVal} THEN ${halfGrowth}
+					ELSE 0
+					END
+				),life_start_time=(
+					case 
+					when life_start_time is null and period=${mature} then now()
+					else life_start_time
+					end
+				),status=(
+					CASE 
+					WHEN #{sdate} <=now() and NOW()<=#{edate} then ${statusActive}
+					ELSE ${statusSleep}
+					END
+				),cleanness_invalid_time=(
+					CASE 
+					WHEN ${keepCleanTime} >0 THEN DATE_ADD(NOW(),INTERVAL ${keepCleanTime} DAY)
+					ELSE cleanness_invalid_time
+					END
+				),gmt_modified = NOW()
+				WHERE
+					num=#{num} and member_num=#{memberNum}
+    	]]>
+    </update>
+
+    <update id="doAddJoyful" parameterType="com.lawu.chick.repository.param.ChickDealWithParam">
+        <![CDATA[
+            update chicken set joyful_val=joyful_val+${val},gmt_modified=now()
+            where num=#{num} and member_num=#{memberNum}
+        ]]>
+    </update>
+
+    <update id="doMinusJoyful" parameterType="com.lawu.chick.repository.param.ChickDealWithParam">
+        <![CDATA[
+            update chicken set joyful_val=(
+            case
+            when joyful_val - ${val} <= ${limitVal} then ${limitVal}
+            ELSE joyful_val - ${val}
+            end
+            ) ,gmt_modified=now()
+            where num=#{num} and member_num=#{memberNum}
+        ]]>
+    </update>
+    
+    <!-- 统计产蛋数量 -->
+    <select id="countEggProduction" resultMap="countEggProductionResultMap">
+        SELECT COUNT(*) AS count, SUM(lay_eggs) AS lay_eggs FROM chicken WHERE is_pregnant = 1 AND lay_eggs >= 0
+    </select>
+    
+    <!-- 小鸡进入生产状态 -->
+    <update id="enterProduction">
+        UPDATE chicken SET joyful_val_snapshoot = joyful_val, is_pregnant=true, inhouse_time=NOW(), gmt_modified=NOW() WHERE id IN (
+            SELECT tmp.id FROM (
+                SELECT id FROM chicken WHERE status = 0 AND period = 2 AND is_pregnant = 0 LIMIT 0,100
+            ) tmp
+        )
+    </update>
+    
+    <!-- 鸡窝鸡蛋数量操作 -->
+    <update id="eggOperator" parameterType="com.lawu.chick.repository.param.ChickEggOperatorParam">
+        UPDATE chicken
+        <set>
+            <choose>
+                <when test="increase">
+                    real_opt_eggs = IF(house_eggs + #{eggs,jdbcType=DECIMAL} <![CDATA[>]]> #{maxHouseEggs,jdbcType=DECIMAL}, IF(house_eggs > #{maxHouseEggs,jdbcType=DECIMAL}, 0, #{maxHouseEggs,jdbcType=DECIMAL} - house_eggs), #{eggs,jdbcType=DECIMAL}),
+                    house_eggs = house_eggs + real_opt_eggs,
+                </when>
+                <otherwise>
+                    real_opt_eggs = IF(house_eggs - #{eggs,jdbcType=DECIMAL} <![CDATA[<]]> 0, house_eggs, #{eggs,jdbcType=DECIMAL}),
+                    house_eggs = house_eggs - real_opt_eggs,
+                </otherwise>
+            </choose>
+            gmt_modified = NOW()
+        </set>
+        WHERE num = #{chickNum,jdbcType=VARCHAR}
+    </update>
+
+    <update id="updateChickInHouse" parameterType="java.lang.String">
+        UPDATE chicken
+        SET inhouse_duration = (
+            CASE
+            WHEN inhouse_time IS NULL THEN 0
+            WHEN cleanness_invalid_time >NOW() THEN inhouse_duration
+            ELSE
+                inhouse_duration + (
+                    round(
+                        (
+                            UNIX_TIMESTAMP(now()) - UNIX_TIMESTAMP(inhouse_time)
+                        ) / 60
+                    )
+                )
+        END)
+        WHERE
+            num = #{num};
+    </update>
+
+
+    <!-- 查询小鸡在鸡窝累计时长大于120 列表-->
+    <select resultType="com.lawu.chick.repository.domain.extend.ChickenInHouseDOView" parameterType="com.lawu.chick.repository.param.ChickenReduceCleanessParam" id="getChickenInHouseReduceCleanessList" >
+       SELECT id,num,member_num as memberNum FROM chicken WHERE inhouse_duration &gt;= #{inhouseDuration} and cleanness_val &gt;0 and(is_outside = 0 or status in(1,3) or is_pregnant =1)  limit #{offset},#{pageSize}
+    </select>
+
+    <!-- 小鸡在鸡窝累计时长大于120 减少清洁度10 配置-->
+    <update id="reduceCleaness" parameterType="com.lawu.chick.repository.param.ReduceCleanParam">
+        UPDATE chicken
+        SET inhouse_duration = 0,inhouse_time = #{inhouseTime},cleanness_val = (
+         CASE WHEN cleanness_val &lt;= #{cleannessVal} THEN 0 ELSE cleanness_val-#{cleannessVal} END) ,gmt_modified = #{inhouseTime}
+        WHERE
+        id = #{id};
+    </update>
+
+    <!-- 查询小鸡在鸡窝累计时长大于120 列表-->
+    <select resultType="com.lawu.chick.repository.domain.extend.ChickenInHouseDOView" parameterType="com.lawu.chick.repository.param.CommonListPageParam" id="getChickenInHouseList" >
+        SELECT id FROM chicken WHERE cleanness_val &gt;0 and (is_outside = 0 or status in(1,3) or is_pregnant =1)  limit #{offset},#{pageSize}
+    </select>
+
+    <update id="updateChickInHouseTime" parameterType="java.lang.Long">
+        UPDATE chicken
+        SET inhouse_duration = (
+        CASE
+        WHEN inhouse_time IS NULL THEN 0
+        WHEN cleanness_invalid_time >NOW() THEN inhouse_duration
+        ELSE
+        inhouse_duration + (
+        round(
+        (
+        UNIX_TIMESTAMP(now()) - UNIX_TIMESTAMP(inhouse_time)
+        ) / 60
+        )
+        )
+        END),inhouse_time = now()
+        WHERE
+        id = #{id};
+    </update>
+    
+    <!-- 小鸡是否存在牧场 -->
+    <select id="chicksIsInExternal" resultType="java.lang.Integer" parameterType="java.lang.String">
+        SELECT count(*) FROM chicken c where c.is_outside = 1 and c.`status` =0 and c.is_pregnant=0 and c.member_num =#{memberNum};
+    </select>
+    
+</mapper>

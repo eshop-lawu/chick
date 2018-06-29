@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lawu.chick.repository.mapper.extend.ChickenCureTaskDOExtendMapper">
+  <update id="addCureTaskProcess" parameterType="com.lawu.chick.repository.param.ChickenCureTaskAddParam">
+      update chicken_cure_task set progress=progress+1,gmt_modify=NOW()
+        <if test="friendMemberId != null">
+          ,relate_member_ids=CONCAT(relate_member_ids,",",#{friendMemberId})
+        </if>
+        where member_num=#{memberNum} and task_type=${chickenCureTaskType} and is_finished=0
+  </update>
+</mapper>

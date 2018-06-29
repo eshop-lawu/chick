@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.lawu.chick.repository.mapper.extend.EggDistributionRecordDOExtendMapper">
+    
+    <!-- 更新分配的小鸡数量以及分配的金蛋数量 -->
+    <update id="updateAssignedQuantity" parameterType="com.lawu.chick.repository.param.UpdateAssignedQuantityParam">
+        UPDATE egg_distribution_record 
+        SET allocated_chicks = allocated_chicks + #{allocatedChicks,jdbcType=BIGINT}, 
+        real_allocations = real_allocations + #{realAllocations,jdbcType=DECIMAL}, 
+        gmt_modified = NOW() 
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+    
+    <!-- 更新发放的小鸡数量以及发放的金蛋数量 -->
+    <update id="updateIssueQuantity" parameterType="com.lawu.chick.repository.param.UpdateIssueQuantityParam">
+        UPDATE egg_distribution_record 
+        SET grant_chicks = grant_chicks + #{grantChicks,jdbcType=BIGINT}, 
+        grants = grants + #{grant,jdbcType=DECIMAL}, 
+        gmt_modified = NOW() 
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+</mapper>

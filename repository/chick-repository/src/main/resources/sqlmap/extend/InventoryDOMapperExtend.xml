@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.lawu.chick.repository.mapper.extend.InventoryDOMapperExtend" >
+   
+   <update id="reduceQuantity"   parameterType="java.lang.Long">
+      	UPDATE inventory SET quantity = quantity-1 ,gmt_modified = sysdate() where id =#{id} and quantity>0
+    </update>
+    
+     <update id="addQuantity"   parameterType="com.lawu.chick.repository.param.InventoryQuantityParam">
+      	UPDATE inventory SET quantity = quantity+#{count} ,gmt_modified = sysdate() where id =#{id}
+    </update>
+
+</mapper>
